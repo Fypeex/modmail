@@ -125,18 +125,27 @@ class Thread:
                 overwrites=overwrites,
                 reason="Creating a thread channel.",
             )
-        except discord.HTTPException as e:  # Failed to create due to missing perms.
-            logger.critical("An error occurred while creating a thread.", exc_info=True)
-            self.manager.cache.pop(self.id)
+        except discord.HTTPException as e:
+            # try again but null-discrim (name could be banned)
+            try:
+                channel = await self.bot.modmail_guild.create_text_channel(
+                    name=format_channel_name(recipient, self.bot.modmail_guild, force_null=True),
+                    category=category,
+                    overwrites=overwrites,
+                    reason="Creating a thread channel.",
+                )
+            except discord.HTTPException as e:  # Failed to create due to missing perms.
+                logger.critical("An error occurred while creating a thread.", exc_info=True)
+                self.manager.cache.pop(self.id)
 
-            embed = discord.Embed(color=self.bot.error_color)
-            embed.title = "Error while trying to create a thread."
-            embed.description = str(e)
-            embed.add_field(name="Recipient", value=recipient.mention)
+                embed = discord.Embed(color=self.bot.error_color)
+                embed.title = "Error while trying to create a thread."
+                embed.description = str(e)
+                embed.add_field(name="Recipient", value=recipient.mention)
 
-            if self.bot.log_channel is not None:
-                await self.bot.log_channel.send(embed=embed)
-            return
+                if self.bot.log_channel is not None:
+                    await self.bot.log_channel.send(embed=embed)
+                return
 
         self._channel = channel
 
@@ -291,7 +300,11 @@ class Thread:
         #     embed.add_field(name='Mention', value=user.mention)
         # embed.add_field(name='Registered', value=created + days(created))
 
-        footer = "User ID: " + str(user.id)
+        if user.dm_channel:
+            footer = f"User ID: {user.id} • DM ID: {user.dm_channel}"
+        else:
+            footer = f"User ID: {user.id}"
+
         embed.set_author(name=str(user), icon_url=user.avatar_url, url=log_url)
         # embed.set_thumbnail(url=avi)
 
@@ -1083,7 +1096,7 @@ class ThreadManager:
     ) -> typing.Optional[Thread]:
         """Finds a thread from cache or from discord channel topics."""
         if recipient is None and channel is not None:
-            thread = self._find_from_channel(channel)
+            thread = await self._find_from_channel(channel)
             if thread is None:
                 user_id, thread = next(
                     ((k, v) for k, v in self.cache.items() if v.channel == channel), (-1, None)
@@ -1118,11 +1131,13 @@ class ThreadManager:
             )
             if channel:
                 thread = Thread(self, recipient or recipient_id, channel)
-                self.cache[recipient_id] = thread
+                if thread.recipient:
+                    # only save if data is valid
+                    self.cache[recipient_id] = thread
                 thread.ready = True
         return thread
 
-    def _find_from_channel(self, channel):
+    async def _find_from_channel(self, channel):
         """
         Tries to find a thread from a channel channel topic,
         if channel topic doesnt exist for some reason, falls back to
@@ -1140,9 +1155,13 @@ class ThreadManager:
         if user_id in self.cache:
             return self.cache[user_id]
 
-        recipient = self.bot.get_user(user_id)
+        try:
+            recipient = self.bot.get_user(user_id) or await self.bot.fetch_user(user_id)
+        except discord.NotFound:
+            recipient = None
+
         if recipient is None:
-            self.cache[user_id] = thread = Thread(self, user_id, channel)
+            thread = Thread(self, user_id, channel)
         else:
             self.cache[user_id] = thread = Thread(self, recipient, channel)
         thread.ready = True

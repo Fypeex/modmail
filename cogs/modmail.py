@@ -341,7 +341,11 @@ class Modmail(commands.Cog):
 
         if self.bot.config["thread_move_notify_mods"]:
             mention = self.bot.config["mention"]
-            await thread.channel.send(f"{mention}, thread has been moved.")
+            if mention is not None:
+                msg = f"{mention}, thread has been moved."
+            else:
+                msg = "Thread has been moved."
+            await thread.channel.send(msg)
 
         sent_emoji, _ = await self.bot.retrieve_emoji()
         await self.bot.add_reaction(ctx.message, sent_emoji)
@@ -604,6 +608,21 @@ class Modmail(commands.Cog):
     @commands.command()
     @checks.has_permissions(PermissionLevel.SUPPORTER)
     @checks.thread_only()
+    async def msglink(self, ctx, message_id: int):
+        """Retrieves the link to a message in the current thread."""
+        try:
+            message = await ctx.thread.recipient.fetch_message(message_id)
+        except discord.NotFound:
+            embed = discord.Embed(
+                color=self.bot.error_color, description="Message not found or no longer exists."
+            )
+        else:
+            embed = discord.Embed(color=self.bot.main_color, description=message.jump_url)
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    @checks.has_permissions(PermissionLevel.SUPPORTER)
+    @checks.thread_only()
     async def loglink(self, ctx):
         """Retrieves the link to the current thread's logs."""
         log_link = await self.bot.api.get_log_link(ctx.channel.id)
@@ -680,7 +699,7 @@ class Modmail(commands.Cog):
             thread = ctx.thread
             if not thread:
                 raise commands.MissingRequiredArgument(SimpleNamespace(name="member"))
-            user = thread.recipient
+            user = thread.recipient or await self.bot.fetch_user(thread.id)
 
         default_avatar = "https://cdn.discordapp.com/embed/avatars/0.png"
         icon_url = getattr(user, "avatar_url", default_avatar)

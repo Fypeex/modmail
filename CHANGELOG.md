@@ -6,14 +6,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 This project mostly adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html);
 however, insignificant breaking changes do not guarantee a major version bump, see the reasoning [here](https://github.com/kyb3r/modmail/issues/319). If you're a plugin developer, note the "BREAKING" section.
 
+# v3.8.5
+
+### Added
+
+- `?msglink <message id>`, allows you to obtain channel + message ID for T&S reports. ([GH #2963](https://github.com/kyb3r/modmail/issues/2963), [PR #2964](https://github.com/kyb3r/modmail/pull/2964))
+- `?mention disable/reset`, disables or resets mention on thread creation. ([PR #2951](https://github.com/kyb3r/modmail/pull/2951))
+
+### Fixed
+
+- Non-master/development branch deployments no longer cause errors to be raised.
+- Autotriggers now can search for roles/channels in guild context. ([GH #2961](https://github.com/kyb3r/modmail/issues/2961))
+
+# v3.8.4
+
+This update is a quick hotfix for a weird behaviour experienced on 1 Feb 2021 where users were not properly cached.
+
+### Fixed
+
+- Corrupted data is no longer saved to thread cache.
+
+# v3.8.2
+
+### Fixed
+
+- Retry with `null-discrim` if channel could not be created. ([GH #2934](https://github.com/kyb3r/modmail/issues/2934))
+- Fix update notifications.
+- Retrieve user from Discord API if user has left the server, resolving issues in `?block`. ([GH #2935](https://github.com/kyb3r/modmail/issues/2935), [PR #2936](https://github.com/kyb3r/modmail/pull/2936))
+- IDs in `<member>` commands work now.
+
 # v3.8.1
 
 ### Fixed
 
-- Additional image uploads now render properly. ([PR #2933](https://github.com/kyb3r/modmail/pull/2933)))
+- Additional image uploads now render properly. ([PR #2933](https://github.com/kyb3r/modmail/pull/2933))
 - `confirm_thread_creation` no longer raises unnecessary errors. ([GH #2931](https://github.com/kyb3r/modmail/issues/2931), [PR #2933](https://github.com/kyb3r/modmail/pull/2933))
 - Autotriggers no longer sends attachments back. ([GH #2932](https://github.com/kyb3r/modmail/issues/2932))
-
 
 # v3.8.0
 

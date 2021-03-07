@@ -1,4 +1,4 @@
-__version__ = "3.8.1"
+__version__ = "3.8.5"
 
 
 import asyncio
@@ -939,6 +939,7 @@ class ModmailBot(commands.Bot):
     async def trigger_auto_triggers(self, message, channel, *, cls=commands.Context):
         message.author = self.modmail_guild.me
         message.channel = channel
+        message.guild = channel.guild
 
         view = StringView(message.content)
         ctx = cls(prefix=self.prefix, view=view, bot=self, message=message)
@@ -967,7 +968,7 @@ class ModmailBot(commands.Bot):
             ctxs = []
             aliases = normalize_alias(alias)
             if not aliases:
-                logger.warning("Alias %s is invalid as called in automove.", invoker)
+                logger.warning("Alias %s is invalid as called in autotrigger.", invoker)
 
             for alias in aliases:
                 view = StringView(invoked_prefix + alias)
@@ -1153,7 +1154,7 @@ class ModmailBot(commands.Bot):
 
     async def handle_reaction_events(self, payload):
         user = self.get_user(payload.user_id)
-        if user.bot:
+        if user is None or user.bot:
             return
 
         channel = self.get_channel(payload.channel_id)
@@ -1519,7 +1520,7 @@ class ModmailBot(commands.Bot):
                     )
                     logger.info("Bot has been updated.")
                     channel = self.log_channel
-                    if self.bot.config["update_notifications"]:
+                    if self.config["update_notifications"]:
                         await channel.send(embed=embed)
             else:
                 try:
@@ -1548,7 +1549,7 @@ class ModmailBot(commands.Bot):
                         embed.set_footer(
                             text=f"Updating Modmail v{self.version} " f"-> v{latest.version}"
                         )
-                        if self.bot.config["update_notifications"]:
+                        if self.config["update_notifications"]:
                             await channel.send(embed=embed)
                     else:
                         embed = discord.Embed(
@@ -1559,7 +1560,7 @@ class ModmailBot(commands.Bot):
                         embed.set_footer(
                             text=f"Updating Modmail v{self.version} " f"-> v{latest.version}"
                         )
-                        if self.bot.config["update_notifications"]:
+                        if self.config["update_notifications"]:
                             await channel.send(embed=embed)
                     await self.logout()
 
@@ -1590,7 +1591,7 @@ def main():
     # check discord version
     if discord.__version__ != "1.6.0":
         logger.error(
-            "Dependencies are not updated, run pipenv install. discord.py version expected 1.5.2, recieved %s",
+            "Dependencies are not updated, run pipenv install. discord.py version expected 1.6.0, recieved %s",
             discord.__version__,
         )
         sys.exit(0)
